@@ -1,0 +1,154 @@
+# ===================================================================
+# DINO Ablation Registry
+# ===================================================================
+# Declarative definition of every ablation study. Each ablation varies
+# ONE axis while holding everything else at the base config. The runner
+# (run_ablation.py) deep-merges each variant's `override` into the base
+# config, assigns an isolated checkpoint dir, and launches one training
+# subprocess per variant. The collector (collect_results.py) reads each
+# run's metrics.jsonl and builds a comparison table.
+#
+# Nothing here patches the training pipeline: every knob below is already
+# exposed by the train_dino() wrapper via the standard config sections.
+# ===================================================================
+
+base_config: configs/set_up.yaml
+output_root: checkpoints/ablations
+
+# The ablation we use to answer the project's central hypothesis.
+primary_ablation: gram_loss
+
+ablations:
+
+  # ---------------------------------------------------------------
+  # 1. Gram loss  (PRIMARY — central hypothesis)
+  # ---------------------------------------------------------------
+  gram_loss:
+    title: "DINOv3-style patch Gram regularization"
+    axis: "dino.use_gram_loss / dino.gram_loss_weight"
+    hypothesis: >
+      Adding a patch-token Gram-matrix matching loss on top of the standard
+      DINO objective improves the structure of dense (patch) features and
+      lowers the self-distillation loss, without destabilising training.
+    expected: >
+      Gram-regularised runs should reach a lower best loss and a higher
+      patch-feature spread (student_cls_dim_std) than the baseline, with the
+      0.05 weight being the sweet spot before regularisation starts to hurt.
+    reference: baseline
+    variants:
+      baseline:
+        override: { dino: { use_gram_loss: false } }
+      weight_0p05:
+        override: { dino: { use_gram_loss: true, gram_loss_weight: 0.05 } }
+      weight_0p1:
+        override: { dino: { use_gram_loss: true, gram_loss_weight: 0.1 } }
+
+  # ---------------------------------------------------------------
+  # 2. Positional embedding type
+  # ---------------------------------------------------------------
+  pos_embed:
+    title: "Positional embedding strategy"
+    axis: "model.pos_embed_type"
+    hypothesis: >
+      2D RoPE (relative) generalises across multi-crop scales better than
+      learned absolute embeddings, while removing positional information
+      entirely should noticeably hurt.
+    expected: >
+      learned ~ rope on global crops; rope more stable across local crops;
+      none clearly worse.
+    reference: learned
+    variants:
+      learned:
+        override: { model: { pos_embed_type: learned } }
+      rope:
+        override: { model: { pos_embed_type: rope } }
+      none:
+        override: { model: { pos_embed_type: none } }
+
+  # ---------------------------------------------------------------
+  # 3. Register tokens (DINOv2)
+  # ---------------------------------------------------------------
+  register_tokens:
+    title: "Register tokens"
+    axis: "model.num_register_tokens"
+    hypothesis: >
+      Adding register tokens absorbs high-norm artifact patches, producing
+      cleaner patch features and a modest loss improvement.
+    expected: >
+      4 registers improve patch-feature spread over 0; 8 gives diminishing
+      returns on a ViT-Tiny backbone.
+    reference: reg_0
+    variants:
+      reg_0:
+        override: { model: { num_register_tokens: 0 } }
+      reg_4:
+        override: { model: { num_register_tokens: 4 } }
+      reg_8:
+        override: { model: { num_register_tokens: 8 } }
+
+  # ---------------------------------------------------------------
+  # 4. Multi-crop: number of local crops
+  # ---------------------------------------------------------------
+  local_crops:
+    title: "Number of local crops (multi-crop strength)"
+    axis: "dino.num_local_crops"
+    hypothesis: >
+      Multi-crop is the core driver of DINO representation quality. More local
+      views give the student more cross-scale targets and lower loss, with
+      diminishing returns past a point.
+    expected: >
+      0 local crops (global-only) is clearly worst; quality improves up to 4–8
+      local crops at increasing compute cost.
+    reference: local_4
+    variants:
+      local_0:
+        override: { dino: { num_local_crops: 0 } }
+      local_2:
+        override: { dino: { num_local_crops: 2 } }
+      local_4:
+        override: { dino: { num_local_crops: 4 } }
+      local_8:
+        override: { dino: { num_local_crops: 8 } }
+
+  # ---------------------------------------------------------------
+  # 5. Teacher temperature (sharpening)
+  # ---------------------------------------------------------------
+  teacher_temp:
+    title: "Teacher temperature (target sharpening)"
+    axis: "dino.teacher_temp"
+    hypothesis: >
+      A sharper teacher distribution (lower temperature) gives a stronger,
+      more confident training signal, but too sharp risks instability/collapse.
+    expected: >
+      0.04–0.07 trains well; 0.02 is sharper and may be unstable early;
+      0.10 (== student temp) is too soft and weakens the signal.
+    reference: temp_0p04
+    variants:
+      temp_0p02:
+        override: { dino: { teacher_temp: 0.02 } }
+      temp_0p04:
+        override: { dino: { teacher_temp: 0.04 } }
+      temp_0p07:
+        override: { dino: { teacher_temp: 0.07 } }
+
+  # ---------------------------------------------------------------
+  # 6. Projection head output dimension (prototype count)
+  # ---------------------------------------------------------------
+  head_out_dim:
+    title: "DINO head output dimension (prototype count)"
+    axis: "dino_head.out_dim"
+    hypothesis: >
+      A larger prototype vocabulary gives the model more capacity to partition
+      the feature space, improving representation quality up to a saturation
+      point set by dataset size.
+    expected: >
+      1024 underfits; 8192 is a good default for TinyImageNet; gains taper as
+      out_dim grows relative to the number of classes.
+    reference: dim_8192
+    variants:
+      dim_1024:
+        override: { dino_head: { out_dim: 1024 } }
+      dim_4096:
+        override: { dino_head: { out_dim: 4096 } }
+      dim_8192:
+        override: { dino_head: { out_dim: 8192 } }

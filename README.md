@@ -23,6 +23,7 @@ A clean, modular PyTorch implementation of **DINO** (Self-**DI**stillation with 
 - [API Server](#api-server)
 - [Docker](#docker)
 - [Tests](#tests)
+- [Ablations](#ablations)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
 - [License](#license)
@@ -52,7 +53,7 @@ This implementation follows the original [DINO paper](https://arxiv.org/abs/2104
 | **Gram regularization**     | Patch-level Gram-matrix matching (DINOv3-style, optional)                      |
 | **Mixed precision**         | Automatic bfloat16 / float16 / float32 selection                               |
 | **Resumable training**      | Saves optimizer, scheduler, scaler, and RNG state                              |
-| **Multi-GPU training**      | DDP data parallelism with `torchrun`; experimental ViT block sharding          |
+| **Multi-GPU training**      | DDP data parallelism with `torchrun`; experimental ViT block sharding        |
 | **FastAPI server**          | `/v1/infer`, `/v1/segment`, `/v1/features`, `/v1/metrics` endpoints    |
 | **Data governance**         | Quality checks (blur, brightness, contrast), dataset profiling, data cards     |
 | **YAML configs**            | Ready-made presets for Tiny → Small → Base → Large                          |
@@ -429,19 +430,63 @@ pytest tests/ --cov=src --cov-report=term-missing
 
 ---
 
+## Ablations
+
+A config-driven ablation harness lives in [`ablations/`](ablations/). Each study varies **one axis** while holding everything else fixed, runs each variant as an isolated training process, and aggregates the runs into a side-by-side comparison. It requires **no changes to the training pipeline** — every knob is already exposed by the `train_dino()` wrapper, so an ablation is just a config override plus an isolated checkpoint directory.
+
+### Studies
+
+| # | Ablation | Axis (config key) | Variants |
+|---|---|---|---|
+| 1 | **`gram_loss`** (primary) | `dino.use_gram_loss` / `dino.gram_loss_weight` | baseline, weight_0p05, weight_0p1 |
+| 2 | `pos_embed` | `model.pos_embed_type` | learned, rope, none |
+| 3 | `register_tokens` | `model.num_register_tokens` | reg_0, reg_4, reg_8 |
+| 4 | `local_crops` | `dino.num_local_crops` | local_0, local_2, local_4, local_8 |
+| 5 | `teacher_temp` | `dino.teacher_temp` | temp_0p02, temp_0p04, temp_0p07 |
+| 6 | `head_out_dim` | `dino_head.out_dim` | dim_1024, dim_4096, dim_8192 |
+
+All studies are declared in [`ablations/ablations.yaml`](ablations/ablations.yaml) — edit that file to add variants or new axes, no Python required.
+
+### Primary hypothesis
+
+The project's central hypothesis is that **DINOv3-style patch Gram regularization improves dense feature quality without destabilising training**. The `gram_loss` study is the one we use to answer it: it compares the standard DINO objective (`baseline`) against two Gram-loss weights, and we read the verdict off two columns in the comparison table — `best_loss` (should drop with Gram loss) and `cls_std`, the mean per-dimension std of student CLS features (should rise, indicating richer, less-collapsed features).
+
+### Running
+
+```bash
+# List every study and its variants
+python ablations/run_ablation.py --list
+
+# Run all variants of the primary study (quick smoke comparison)
+python ablations/run_ablation.py gram_loss --epochs 30 --max-batches-per-epoch 200
+
+# Run a single variant
+python ablations/run_ablation.py gram_loss --variant weight_0p05
+
+# Run every study, then auto-aggregate results
+python ablations/run_all.py --epochs 30 --max-batches-per-epoch 200
+
+# Aggregate whatever runs currently exist into a comparison report
+python ablations/collect_results.py
+```
+
+`collect_results.py` writes `summary.md`, `summary.csv`, and `summary.json` to `ablations/results/`, with a Δ column versus each study's reference variant. See [`ablations/README.md`](ablations/README.md) for the full guide.
+
+---
+
 ## Documentation
 
 In-depth technical documentation lives in the [`docs/`](docs/) directory.
 
-| Document | Description |
-|---|---|
-| [docs/overview.md](docs/overview.md) | What DINO is, the self-distillation concept, centering and sharpening, emergent properties |
-| [docs/architecture.md](docs/architecture.md) | PatchEmbedding, positional embeddings (learned / RoPE), attention, transformer blocks, DINOHead |
-| [docs/losses.md](docs/losses.md) | DINO loss math, EMA centering, teacher temperature; Gram loss formulation and memory notes |
-| [docs/training.md](docs/training.md) | Training pipeline, EMA teacher update, all three schedulers, AMP, gradient accumulation, checkpointing |
-| [docs/data.md](docs/data.md) | Multi-crop augmentation pipeline, TinyImageNet, data governance and quality checks |
-| [docs/inference.md](docs/inference.md) | Segmentation strategies, visualization, FastAPI endpoint reference, manual checkpoint loading |
-| [docs/configs.md](docs/configs.md) | Complete reference for every YAML parameter |
+| Document                                  | Description                                                                                            |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| [docs/overview.md](docs/overview.md)         | What DINO is, the self-distillation concept, centering and sharpening, emergent properties             |
+| [docs/architecture.md](docs/architecture.md) | PatchEmbedding, positional embeddings (learned / RoPE), attention, transformer blocks, DINOHead        |
+| [docs/losses.md](docs/losses.md)             | DINO loss math, EMA centering, teacher temperature; Gram loss formulation and memory notes             |
+| [docs/training.md](docs/training.md)         | Training pipeline, EMA teacher update, all three schedulers, AMP, gradient accumulation, checkpointing |
+| [docs/data.md](docs/data.md)                 | Multi-crop augmentation pipeline, TinyImageNet, data governance and quality checks                     |
+| [docs/inference.md](docs/inference.md)       | Segmentation strategies, visualization, FastAPI endpoint reference, manual checkpoint loading          |
+| [docs/configs.md](docs/configs.md)           | Complete reference for every YAML parameter                                                            |
 
 ---
 
