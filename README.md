@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets\header.png" width="1000"/>
+</p>
+
 # DINO — Self-Supervised Vision Transformer
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
