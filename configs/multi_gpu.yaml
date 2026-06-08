@@ -1,0 +1,95 @@
+# DINO multi-GPU DDP config. Launch with torchrun.
+
+device: auto
+
+model:
+  img_size: 224
+  patch_size: 8
+  in_chans: 3
+  embed_dim: 384
+  depth: 12
+  num_heads: 6
+  mlp_ratio: 4.0
+  qkv_bias: true
+  patch_norm: false
+  drop_rate: 0.0
+  attn_dropout: 0.0
+  proj_dropout: 0.0
+  mlp_dropout: 0.0
+  drop_path_rate: 0.1
+  pos_embed_type: learned
+  use_cls_token: true
+  num_register_tokens: 4
+  rope_base: 10000.0
+  strict_img_size: false
+
+dino_head:
+  in_dim: 384
+  out_dim: 65536
+  hidden_dim: 2048
+  bottleneck_dim: 256
+  num_layers: 3
+  use_bn: false
+  norm_last_layer: true
+  bias: true
+  cls_key: cls
+
+dino:
+  num_global_crops: 2
+  num_local_crops: 6
+  student_temp: 0.1
+  teacher_momentum_start: 0.9995
+  teacher_momentum_end: 1.0
+  warmup_teacher_temp: 0.04
+  teacher_temp: 0.07
+  warmup_teacher_temp_epochs: 30
+  use_gram_loss: true
+  gram_loss_weight: 0.05
+
+optim:
+  learning_rate: 5.0e-4
+  min_learning_rate: 1.0e-6
+  weight_decay: 0.04
+  weight_decay_end: 0.4
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+
+train:
+  epochs: 300
+  warmup_epochs: 10
+  grad_clip: 3.0
+  grad_accum_steps: 1
+  max_batches_per_epoch: null
+  log_every: 50
+  metrics_every: 50
+  teacher_offload: false
+  exclusive_gpu_model: false
+  empty_cache_after_offload: false
+
+checkpoint:
+  ckpt_dir: checkpoints/dino_ddp_vits8
+  run_name: dino_ddp_vits8
+  save_every: 5
+  keep_last_n_checkpoints: 3
+  monitor_name: loss
+  monitor_mode: min
+
+data:
+  dataset_name: zh-plus/tiny-imagenet
+  dataset_revision: null
+  data_dir: data
+  artifacts_dir: data/artifacts
+  reports_dir: data/reports
+  seed: 42
+  val_ratio: 0.1
+  global_crop_size: 224
+  local_crop_size: 96
+  global_crop_scale: [0.4, 1.0]
+  local_crop_scale: [0.05, 0.4]
+  batch_size: 64       # per GPU/process batch size
+  num_workers: 8
+  pin_memory: true
+  persistent_workers: true
+  shuffle_train: true
+  drop_last_train: true
+  drop_last_val: false

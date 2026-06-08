@@ -1,0 +1,56 @@
+# Git
+.git/
+.gitignore
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Checkpoints and data (mounted as volumes)
+checkpoints/
+data/artifacts/
+data/reports/
+data/cache/
+*.pt
+*.pth
+*.safetensors
+
+# Logs and outputs
+outputs/
+logs/
+*.jsonl
+*.log
+
+# Notebooks (not needed in container)
+notebooks/
+
+# Testing and CI
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+.env.*
+secrets/

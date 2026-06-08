@@ -1,0 +1,147 @@
+# DINO ViT-Base/16 — high-capacity training config
+# Architecture: embed_dim=768 | depth=12 | heads=12 | img=224 | patch=16
+# ~86 M parameters. Matches the original DINO paper ViT-B/16 setup.
+# Requires ≥ 24 GB VRAM or gradient accumulation + teacher offload.
+
+device: auto
+
+# ---------------------------------------------------------------
+# ViT backbone  (ViT-B/16)
+# ---------------------------------------------------------------
+model:
+  img_size: 224
+  patch_size: 16
+  in_chans: 3
+
+  embed_dim: 768
+  depth: 12
+  num_heads: 12
+  mlp_ratio: 4.0
+
+  qkv_bias: true
+  patch_norm: false
+
+  drop_rate: 0.0
+  attn_dropout: 0.0
+  proj_dropout: 0.0
+  mlp_dropout: 0.0
+  drop_path_rate: 0.1
+
+  pos_embed_type: learned   # "learned" | "rope" | "none"
+  use_cls_token: true
+  num_register_tokens: 4
+
+  rope_base: 10000.0
+  strict_img_size: false
+
+# ---------------------------------------------------------------
+# DINO projection head
+# ---------------------------------------------------------------
+dino_head:
+  in_dim: 768
+  out_dim: 65536
+  hidden_dim: 2048
+  bottleneck_dim: 256
+  num_layers: 3
+  use_bn: false
+  norm_last_layer: true
+  bias: true
+  cls_key: cls
+
+# ---------------------------------------------------------------
+# DINO training hyper-parameters
+# ---------------------------------------------------------------
+dino:
+  num_global_crops: 2
+  num_local_crops: 6
+
+  student_temp: 0.1
+
+  teacher_momentum_start: 0.9995
+  teacher_momentum_end: 1.0
+
+  warmup_teacher_temp: 0.04
+  teacher_temp: 0.07
+  warmup_teacher_temp_epochs: 50   # longer warmup for larger model
+
+  use_gram_loss: true
+  gram_loss_weight: 0.05
+
+# ---------------------------------------------------------------
+# Optimizer
+# ---------------------------------------------------------------
+optim:
+  learning_rate: 1.5e-4         # scale LR with effective batch size
+  min_learning_rate: 1.0e-6
+
+  weight_decay: 0.04
+  weight_decay_end: 0.4
+
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
+
+# ---------------------------------------------------------------
+# Training loop
+# ---------------------------------------------------------------
+train:
+  epochs: 800                   # original DINO paper used 800 epochs on ImageNet
+  warmup_epochs: 10
+
+  grad_clip: 3.0
+  grad_accum_steps: 4           # effective batch ~= 256 * 4 = 1024
+
+  max_batches_per_epoch: null
+  log_every: 100
+  metrics_every: 100
+
+  teacher_offload: false
+  exclusive_gpu_model: false
+  empty_cache_after_offload: false
+
+# ---------------------------------------------------------------
+# Checkpoints
+# ---------------------------------------------------------------
+checkpoint:
+  ckpt_dir: checkpoints/dino_vit_base
+  run_name: dino_vitb16
+
+  save_every: 10
+  keep_last_n_checkpoints: 3
+
+  monitor_name: loss
+  monitor_mode: min
+
+# ---------------------------------------------------------------
+# Data
+# ---------------------------------------------------------------
+data:
+  dataset_name: zh-plus/tiny-imagenet
+  dataset_revision: null
+  data_dir: data
+  artifacts_dir: data/artifacts
+  reports_dir: data/reports
+
+  seed: 42
+  val_ratio: 0.1
+
+  global_crop_size: 224
+  local_crop_size: 96
+  global_crop_scale: [0.4, 1.0]
+  local_crop_scale: [0.05, 0.4]
+
+  batch_size: 64
+  num_workers: 8
+  pin_memory: true
+  persistent_workers: true
+  shuffle_train: true
+  drop_last_train: true
+  drop_last_val: false
+
+  quality:
+    blur_variance_threshold: 0.002
+    dark_mean_threshold: 0.08
+    bright_mean_threshold: 0.92
+    low_contrast_std_threshold: 0.05
+    saturated_pixel_fraction_threshold: 0.2
+    tiny_side_threshold: 32
+    flag_top_k_examples: 25

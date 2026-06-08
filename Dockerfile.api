@@ -1,0 +1,38 @@
+# ---------------------------------------------------------------
+# DINO — FastAPI inference server container
+# ---------------------------------------------------------------
+# Build:  docker build -f Dockerfile.api -t dino-api .
+# Run:    docker run -p 8000:8000 \
+#           -v $(pwd)/checkpoints:/app/checkpoints \
+#           -e DINO_CHECKPOINT=/app/checkpoints/dino_vits8/dino_vits8_best.pt \
+#           dino-api
+# ---------------------------------------------------------------
+
+FROM pytorch/pytorch:2.3.0-cuda12.1-cudnn8-runtime
+
+WORKDIR /app
+
+# System dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgl1-mesa-glx \
+        libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python dependencies (training + API)
+COPY requirements.txt requirements-api.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -r requirements-api.txt
+
+# Copy source
+COPY . .
+
+RUN pip install --no-cache-dir -e ".[api]"
+
+VOLUME ["/app/checkpoints"]
+
+EXPOSE 8000
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DINO_DEVICE=auto
+
+CMD ["uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000"]

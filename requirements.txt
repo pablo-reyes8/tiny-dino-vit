@@ -1,0 +1,18 @@
+# Core training dependencies
+# Install: pip install -r requirements.txt
+#
+# For the API server:      pip install -r requirements-api.txt
+# For development extras:  pip install -e ".[dev]"
+
+# Deep learning
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Data
+numpy>=1.24.0
+pillow>=10.0.0
+datasets>=2.14.0      # Hugging Face datasets (TinyImageNet via zh-plus/tiny-imagenet)
+
+# Config / utilities
+pyyaml>=6.0
+tqdm>=4.65.0
