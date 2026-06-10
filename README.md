@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets\header.png" width="700"/>
+  <img src="assets\header.png" width="1000"/>
 </p>
 
 # DINO — Self-Supervised Vision Transformer
