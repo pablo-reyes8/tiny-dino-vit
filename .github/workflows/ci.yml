@@ -1,0 +1,212 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+# Cancel in-flight runs for the same branch on new pushes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────
+  # Detect which paths changed so downstream jobs can skip cheaply
+  # ─────────────────────────────────────────────────────────────────
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      src:      ${{ steps.filter.outputs.src }}
+      tests:    ${{ steps.filter.outputs.tests }}
+      docker:   ${{ steps.filter.outputs.docker }}
+      deps:     ${{ steps.filter.outputs.deps }}
+      configs:  ${{ steps.filter.outputs.configs }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            src:
+              - 'src/**'
+              - 'scripts/**'
+            tests:
+              - 'tests/**'
+            docker:
+              - 'Dockerfile'
+              - 'Dockerfile.api'
+              - 'docker-compose.yml'
+              - '.dockerignore'
+            deps:
+              - 'requirements*.txt'
+              - 'pyproject.toml'
+            configs:
+              - 'configs/**'
+
+  # ─────────────────────────────────────────────────────────────────
+  # Lint & format check  (runs when src, tests, or deps change)
+  # ─────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint & format
+    needs: changes
+    if: |
+      needs.changes.outputs.src    == 'true' ||
+      needs.changes.outputs.tests  == 'true' ||
+      needs.changes.outputs.deps   == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dev tools
+        run: pip install --upgrade ruff black isort
+
+      - name: Ruff lint
+        run: ruff check src tests scripts
+
+      - name: Black format check
+        run: black --check src tests scripts
+
+      - name: isort import order check
+        run: isort --check-only src tests scripts
+
+  # ─────────────────────────────────────────────────────────────────
+  # Test suite  (runs when src, tests, deps, or configs change)
+  # ─────────────────────────────────────────────────────────────────
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    needs: changes
+    if: |
+      needs.changes.outputs.src     == 'true' ||
+      needs.changes.outputs.tests   == 'true' ||
+      needs.changes.outputs.deps    == 'true' ||
+      needs.changes.outputs.configs == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run tests with coverage
+        run: |
+          pytest tests/ \
+            --cov=src \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            -v --tb=short
+
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.11'
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
+
+  # ─────────────────────────────────────────────────────────────────
+  # Type check  (runs when src or deps change)
+  # ─────────────────────────────────────────────────────────────────
+  typecheck:
+    name: Type check (mypy)
+    needs: changes
+    if: |
+      needs.changes.outputs.src  == 'true' ||
+      needs.changes.outputs.deps == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run mypy
+        run: mypy src --ignore-missing-imports
+
+  # ─────────────────────────────────────────────────────────────────
+  # Docker build check  (runs when Docker files or src change)
+  # ─────────────────────────────────────────────────────────────────
+  docker:
+    name: Docker build (${{ matrix.dockerfile }})
+    needs: changes
+    if: |
+      needs.changes.outputs.docker == 'true' ||
+      needs.changes.outputs.src    == 'true' ||
+      needs.changes.outputs.deps   == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dockerfile: Dockerfile
+            tag: dino-train
+          - dockerfile: Dockerfile.api
+            tag: dino-api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.dockerfile }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: false
+          tags: ${{ matrix.tag }}:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─────────────────────────────────────────────────────────────────
+  # Final gate — required status check for branch protection
+  # ─────────────────────────────────────────────────────────────────
+  ci-gate:
+    name: CI gate
+    needs: [changes, lint, test, typecheck, docker]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate results
+        env:
+          LINT_RESULT:      ${{ needs.lint.result }}
+          TEST_RESULT:      ${{ needs.test.result }}
+          TYPECHECK_RESULT: ${{ needs.typecheck.result }}
+          DOCKER_RESULT:    ${{ needs.docker.result }}
+        run: |
+          failed=false
+          for job in lint test typecheck docker; do
+            result=$(eval echo \$${job^^}_RESULT)
+            if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
+              echo "::error::Job '$job' failed with status: $result"
+              failed=true
+            fi
+          done
+          $failed && exit 1 || echo "All required checks passed (or were skipped)."
