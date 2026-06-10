@@ -1,3 +1,5 @@
+"""Build foreground masks and patch-level maps from DINO features."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple

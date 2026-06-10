@@ -1,3 +1,5 @@
+"""Define the projection head used for DINO self-supervised targets."""
+
 from src.model.vit_model import * 
 
 class DINOHead(nn.Module):

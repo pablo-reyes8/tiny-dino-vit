@@ -1,3 +1,5 @@
+"""Save, load, and manage resume-safe DINO training checkpoints."""
+
 # ============================================================
 # DINO CHECKPOINT UTILITIES
 # Efficient resume-safe checkpointing for student/teacher DINO

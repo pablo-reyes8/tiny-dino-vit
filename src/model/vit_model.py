@@ -1,3 +1,5 @@
+"""Define the Vision Transformer backbone used by the DINO models."""
+
 from typing import Optional, Tuple, Literal, Dict, Any
 
 import torch

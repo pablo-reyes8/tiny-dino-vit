@@ -1,3 +1,5 @@
+"""Define FastAPI routes for health checks and DINO image inference."""
+
 from __future__ import annotations
 
 from typing import List, Optional

@@ -1,3 +1,5 @@
+"""Execute one DINO training epoch with forward, loss, backward, and EMA updates."""
+
 # ============================================================
 # TRAIN ONE EPOCH FOR DINO
 # ============================================================

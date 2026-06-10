@@ -1,7 +1,10 @@
+"""Provide reusable Vision Transformer utility layers and compatibility exports."""
 
 import torch
 import torch.nn as nn
 from typing import Optional, Tuple, Union
+
+from src.model.attention import MultiHeadSelfAttention
 
 class DropPath(nn.Module):
     """

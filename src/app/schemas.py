@@ -1,3 +1,5 @@
+"""Define Pydantic request and response schemas for the DINO API."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Optional

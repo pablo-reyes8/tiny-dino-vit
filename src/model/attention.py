@@ -1,3 +1,5 @@
+"""Implement multi-head self-attention with optional 2D RoPE support."""
+
 import torch
 import torch.nn as nn
 

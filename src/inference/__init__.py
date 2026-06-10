@@ -1,3 +1,5 @@
+"""Expose the public DINO inference, segmentation, and visualization API."""
+
 from src.inference.forward import (
     dino_forward,
     extract_cls_features,

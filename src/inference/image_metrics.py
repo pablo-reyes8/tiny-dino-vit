@@ -1,3 +1,5 @@
+"""Compute image, feature, attention, and segmentation quality metrics."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional

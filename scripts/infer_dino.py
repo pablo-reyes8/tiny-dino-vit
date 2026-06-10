@@ -1,3 +1,5 @@
+"""Run DINO checkpoint inference and write image-level artifacts."""
+
 from __future__ import annotations
 
 import argparse

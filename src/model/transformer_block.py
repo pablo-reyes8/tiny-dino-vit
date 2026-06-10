@@ -1,3 +1,5 @@
+"""Compose ViT attention and feed-forward layers into a Transformer block."""
+
 from src.model.vit_utils import * 
 from src.model.attention import * 
 

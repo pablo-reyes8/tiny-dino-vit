@@ -1,3 +1,5 @@
+"""Run single-process DINO training from command-line configuration."""
+
 from __future__ import annotations
 
 import argparse

@@ -1,3 +1,5 @@
+"""Define step-based DINO schedules for optimization and teacher behavior."""
+
 from src.training.schedulers_helpers import * 
 
 # ============================================================

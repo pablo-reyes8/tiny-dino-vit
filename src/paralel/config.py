@@ -1,3 +1,5 @@
+"""Load and merge configuration files for parallel DINO training."""
+
 from __future__ import annotations
 
 import json

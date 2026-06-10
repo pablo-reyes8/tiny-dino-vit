@@ -1,3 +1,5 @@
+"""Expose helpers for distributed, data-parallel, and model-parallel training."""
+
 from src.paralel.distributed import (
     DistributedContext,
     barrier,

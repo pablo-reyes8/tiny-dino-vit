@@ -1,5 +1,7 @@
 # ============================================================
 # DINO PRINT HELPERS
+"""Provide logging, configuration, device, and checkpoint helpers for training."""
+
 # ============================================================
 
 from __future__ import annotations

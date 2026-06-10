@@ -1,3 +1,5 @@
+"""Build reusable scalar schedules for DINO training hyperparameters."""
+
 # ============================================================
 # DINO SCHEDULERS
 # Step-based schedules for:

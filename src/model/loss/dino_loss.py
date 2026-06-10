@@ -1,3 +1,5 @@
+"""Compute the standard DINO cross-view teacher-student loss."""
+
 from __future__ import annotations
 
 from typing import Dict, List, Optional

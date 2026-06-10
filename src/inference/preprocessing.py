@@ -1,3 +1,5 @@
+"""Load, resize, normalize, and batch images for DINO inference."""
+
 from __future__ import annotations
 
 from pathlib import Path

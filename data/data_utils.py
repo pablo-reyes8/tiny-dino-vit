@@ -1,3 +1,5 @@
+"""Provide small visualization helpers for inspecting image tensors."""
+
 import matplotlib.pyplot as plt
 import torch
 

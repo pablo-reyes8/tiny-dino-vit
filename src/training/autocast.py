@@ -1,3 +1,5 @@
+"""Configure mixed-precision autocast and gradient-scaling utilities."""
+
 from __future__ import annotations
 
 import inspect

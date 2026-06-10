@@ -1,3 +1,4 @@
+"""Run the end-to-end DINO training loop with losses, schedules, and checkpoints."""
 
 from src.training.high_level_training_helpers import * 
 from src.training.seed import * 

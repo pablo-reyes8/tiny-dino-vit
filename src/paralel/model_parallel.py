@@ -1,3 +1,5 @@
+"""Shard Vision Transformer blocks across devices for model parallel runs."""
+
 from __future__ import annotations
 
 from typing import Iterable, List

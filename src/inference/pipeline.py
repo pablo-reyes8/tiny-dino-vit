@@ -1,3 +1,5 @@
+"""Coordinate preprocessing, DINO forward passes, metrics, and artifacts."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Sequence, Union

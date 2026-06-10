@@ -1,3 +1,5 @@
+"""Launch distributed or model-parallel DINO training from the command line."""
+
 from __future__ import annotations
 
 import argparse

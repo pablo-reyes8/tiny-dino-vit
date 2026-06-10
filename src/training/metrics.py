@@ -293,6 +293,8 @@ def dino_softmax_metrics(
 
     return metrics
 
+"""Collect and summarize metrics for monitoring DINO training health."""
+
 # ============================================================
 # DINO feature metrics from model outputs
 # ============================================================

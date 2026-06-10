@@ -1,3 +1,5 @@
+"""Manage DINO model loading and request-level inference execution."""
+
 from __future__ import annotations
 
 import json

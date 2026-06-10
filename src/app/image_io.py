@@ -1,3 +1,5 @@
+"""Decode, encode, and summarize images for API requests and responses."""
+
 from __future__ import annotations
 
 import base64

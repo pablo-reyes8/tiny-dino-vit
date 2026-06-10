@@ -1,3 +1,5 @@
+"""Update and synchronize the DINO teacher model with EMA weights."""
+
 # ============================================================
 # DINO TEACHER EMA UTILITIES
 # ============================================================

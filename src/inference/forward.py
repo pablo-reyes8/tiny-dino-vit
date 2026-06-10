@@ -1,3 +1,5 @@
+"""Run forward passes and extract model features for DINO inference."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Sequence, Union

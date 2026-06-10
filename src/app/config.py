@@ -1,3 +1,5 @@
+"""Load and expose runtime settings for the DINO API service."""
+
 from __future__ import annotations
 
 import os

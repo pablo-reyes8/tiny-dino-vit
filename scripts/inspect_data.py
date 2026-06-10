@@ -1,3 +1,5 @@
+"""Inspect DINO training data and optionally write dataset reports."""
+
 from __future__ import annotations
 
 import argparse

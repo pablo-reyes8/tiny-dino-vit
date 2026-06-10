@@ -1,3 +1,5 @@
+"""Inspect, validate, and document image datasets used for DINO training."""
+
 from __future__ import annotations
 
 import hashlib

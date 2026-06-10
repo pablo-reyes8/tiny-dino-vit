@@ -76,8 +76,8 @@ def manual_2d_cos_sin(head_dim, base, grid_size, device, dtype):
     freqs_y = torch.einsum("n,d->nd", yy, inv_freq)
     freqs_x = torch.einsum("n,d->nd", xx, inv_freq)
 
-    emb_y = torch.cat([freqs_y, freqs_y], dim=-1)
-    emb_x = torch.cat([freqs_x, freqs_x], dim=-1)
+    emb_y = freqs_y.repeat_interleave(2, dim=-1)
+    emb_x = freqs_x.repeat_interleave(2, dim=-1)
     emb = torch.cat([emb_y, emb_x], dim=-1)
 
     cos = emb.cos().to(dtype=dtype)[None, None, :, :]

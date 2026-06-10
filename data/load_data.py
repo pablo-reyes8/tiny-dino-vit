@@ -1,9 +1,15 @@
+"""Build Tiny ImageNet datasets, DINO multicrop transforms, and DataLoaders."""
+
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-from datasets import load_dataset
 from torch.utils.data import random_split
 from data.data_config import DEFAULT_DATA_CONFIG as DATA_CONFIG
+
+try:
+    from datasets import load_dataset
+except ModuleNotFoundError:
+    load_dataset = None
 
 class DINOTransform:
     def __init__(
@@ -15,6 +21,13 @@ class DINOTransform:
         global_crop_scale=(0.5, 1.0),
         local_crop_scale=(0.2, 0.5),
     ):
+        for name, scale in (
+            ("global_crop_scale", global_crop_scale),
+            ("local_crop_scale", local_crop_scale),
+        ):
+            if len(scale) != 2 or scale[0] > scale[1]:
+                raise ValueError(f"{name} must be a (min, max) tuple with min <= max.")
+
         self.global_crop_size = global_crop_size
         self.local_crop_size = local_crop_size
         self.num_global_crops = num_global_crops
@@ -140,6 +153,12 @@ def build_tinyimagenet_dataloaders(config=DATA_CONFIG):
     # --------------------------------------------------------
     # Cargar dataset desde Hugging Face
     # --------------------------------------------------------
+
+    if load_dataset is None:
+        raise ModuleNotFoundError(
+            "The 'datasets' package is required to load Tiny ImageNet. "
+            "Install it with `pip install datasets` or provide a mocked load_dataset."
+        )
 
     hf_dataset = load_dataset(config["dataset_name"])
 

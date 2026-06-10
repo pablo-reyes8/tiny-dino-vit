@@ -1,3 +1,5 @@
+"""Convert images into patch embeddings and runtime patch-grid metadata."""
+
 from dataclasses import dataclass
 from typing import Optional, Tuple, Union
 

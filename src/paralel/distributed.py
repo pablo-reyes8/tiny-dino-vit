@@ -1,3 +1,5 @@
+"""Initialize, query, and clean up PyTorch distributed training state."""
+
 from __future__ import annotations
 
 import os

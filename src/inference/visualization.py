@@ -1,3 +1,5 @@
+"""Convert tensors to images and create heatmap or mask overlays."""
+
 from __future__ import annotations
 
 from pathlib import Path

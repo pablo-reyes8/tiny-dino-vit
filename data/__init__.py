@@ -1,3 +1,5 @@
+"""Expose data configuration, inspection, and reporting utilities."""
+
 from data.data_config import DEFAULT_DATA_CONFIG, merge_data_config
 from data.dataops import (
     DataArtifact,

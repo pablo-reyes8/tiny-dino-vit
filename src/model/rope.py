@@ -1,3 +1,5 @@
+"""Implement 2D rotary positional embeddings for ViT attention heads."""
+
 from typing import Optional, Callable, Tuple
 import torch
 import torch.nn as nn
@@ -75,8 +77,8 @@ class RotaryEmbedding2D(nn.Module):
         freqs_y = torch.einsum("n,d->nd", yy, self.inv_freq)  # [N, axis_dim/2]
         freqs_x = torch.einsum("n,d->nd", xx, self.inv_freq)  # [N, axis_dim/2]
 
-        emb_y = torch.cat([freqs_y, freqs_y], dim=-1)  # [N, axis_dim]
-        emb_x = torch.cat([freqs_x, freqs_x], dim=-1)  # [N, axis_dim]
+        emb_y = freqs_y.repeat_interleave(2, dim=-1)  # [N, axis_dim]
+        emb_x = freqs_x.repeat_interleave(2, dim=-1)  # [N, axis_dim]
 
         emb = torch.cat([emb_y, emb_x], dim=-1)  # [N, head_dim]
 

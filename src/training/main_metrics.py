@@ -1,3 +1,5 @@
+"""Collect per-step DINO metrics into structured dictionaries."""
+
 from src.training.metrics import *  
 
 # ============================================================

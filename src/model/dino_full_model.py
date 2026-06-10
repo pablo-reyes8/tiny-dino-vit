@@ -1,3 +1,5 @@
+"""Assemble student-teacher DINO models and projection heads."""
+
 from src.model.dino_head import * 
 import copy
 
